@@ -1,9 +1,9 @@
 require('dotenv').config();
 const express = require('express');
 const app = express();
-const db = require('./models');
+const db = require('./src/models');
 const router = express.Router();
-const { ssoAzure, ssoOkta } = require('./controllers/authController');
+const { ssoAzure, ssoOkta } = require('./src/controllers/authController');
 
 
 // SSO endpoints
@@ -18,12 +18,12 @@ db.sequelize.authenticate()
   .then(() => console.log('Database connected!'))
   .catch(err => console.error('Database connection error:', err));
 
-app.use('/users', require('./routes/userRoutes'));
-app.use('/webhooks', require('./routes/webhookRoutes'));
-app.use('/integrations', require('./routes/integrationRoutes'));
-app.use('/organizations', require('./routes/organizationRoutes'));
-app.use('/auth', require('./routes/authRoutes'));
-app.use('/audit-logs', require('./routes/auditRoutes'));
+app.use('/users', require('./src/routes/userRoutes'));
+app.use('/webhooks', require('./src/routes/webhookRoutes'));
+app.use('/integrations', require('./src/routes/integrationRoutes'));
+app.use('/organizations', require('./src/routes/organizationRoutes'));
+app.use('/auth', require('./src/routes/authRoutes'));
+app.use('/audit-logs', require('./src/routes/auditRoutes'));
 app.use('/sso', router);
 
 

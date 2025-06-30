@@ -1,52 +1,55 @@
 # 🏗️ Multi-Tenant SaaS Platform with External Integrations
 
-This project is a backend system designed to simulate a real-world multi-tenant SaaS platform. It includes tenant-aware authentication, isolated organization data, webhook handling from simulated external services, and robust error handling with retry logic.
+This project is a backend system designed to simulate a real-world multi-tenant SaaS platform. It includes tenant-aware authentication, isolated organization data, webhook handling from simulated external services, robust error handling with retry logic, and SSO simulation.
 
-> **Stack**: Node.js · Express.js · PostgreSQL · Sequelize ORM · JWT · Redis (optional) · Jest
+> **Stack**: Node.js · Express.js · PostgreSQL · Sequelize ORM · JWT
 
 ---
 
 ## 🧩 Features
 
 ### 🔒 Multi-Tenant SaaS Platform
-- Tenant data isolation with row-level scoping
+- Tenant data isolation with row-level security (RLS)
 - JWT-based authentication with role-based access
 - Organization and user CRUD APIs
 - Audit logging for all data-changing operations
 - API rate limiting and request input validation
 
 ### 🔗 External Integration Engine
-- Webhook processor for simulated external services
+- Webhook processor for simulated external services (User, Payment, Communication)
 - Async job queue with retry and failure recovery
 - External API call simulation with circuit breaker fallback
 - Data synchronization between external & internal systems
 - Health monitoring for integration status
 
+### 🪪 SSO Simulation
+- Simulated OIDC/SSO endpoints for Azure AD and Okta
+
 ### 🎁 Bonus Features
 - Idempotent webhook handling
 - Circuit breaker pattern (`opossum`)
 - Bulk event handling for high-throughput webhooks
-- (Optional) SSO stub using simulated OIDC flow
+- Dead-letter queue for failed events
 
 ---
 
 ## 🗂️ Project Structure
 
-src/
-├── config/ # App and DB config
-├── controllers/ # Request handlers
-├── integrations/ # External service simulation
-├── jobs/ # Async job queue and workers
-├── middleware/ # Auth, validation, rate limiter
-├── models/ # Sequelize models
-├── routes/ # API routes
-├── services/ # Business logic
-├── utils/ # Helpers (logger, error handler, etc.)
-└── logs/ # Audit logs
+src/ 
+├── controllers/ # Request handlers  
+├── integrations/ # External service simulation  
+├── jobs/ # Async job queue and workers  
+├── middleware/ # Auth, validation, rate limiter  
+├── models/ # Sequelize models  
+├── routes/ # API routes  
+├── handler/ Handle webhook events
+├── data/ # Dataset required for the assessment  
+├── utils/ # Helpers (logger, error handler, etc.)  
+└── validator/ # Input validation
 
-tests/ # Jest tests
-docs/ # Schema, architecture docs
-
+migrations/ # Sequelize migrations
+config/ # App and DB config  
+docs/ # Schema, architecture, api docs
 
 ---
 
@@ -54,15 +57,16 @@ docs/ # Schema, architecture docs
 
 ```bash
 # Clone repo
-git clone <repo-url>
-cd multi-tenant-saas
+git clone <https://github.com/Temitopesam1/SaaS-Platform.git>
+cd SaaS-Platform.git
 
 # Install dependencies
 npm install
 
 # Setup environment
 cp .env.example .env
-# Fill DB credentials and JWT secret
+cp config/config.example.json config.json
+# Fill DB credentials in config and JWT secret in .env files respectively
 
 # Run database migrations and seed
 npx sequelize db:migrate
@@ -74,134 +78,77 @@ npm run dev
 
 ## 🧪 Running Tests
 
+
+To start worker, run the below in another terminal
+
 ```bash
-npm test
+node worker.js
 ```
 
-Includes:
+---
 
-Unit tests for services
+## 📒 API Overview
 
-Integration tests for API endpoints
+See [`docs/api.md`](docs/api.md) for full request/response schemas.
 
-Mocked webhook events and retry scenarios
+### Auth
+- `POST /auth/login` — User login (returns JWT)
+- `POST /sso/azure` — Simulated Azure AD SSO login (returns JWT)
+- `POST /sso/okta` — Simulated Okta SSO login (returns JWT)
 
-📒 API Documentation
-Auth
-POST /auth/register
+### Organizations
+- `GET /organizations` — Get current org details
+- `POST /organizations` — Create new org (super_admin only)
 
-POST /auth/login
+### Users
+- `GET /users` — List users (admin only)
+- `POST /users` — Create user (admin only)
 
-Organizations
-GET /organizations
+### Webhooks
+- `POST /webhooks/:provider` — Receive one or more webhook events
 
-POST /organizations
+### Monitoring & Logs
+- `GET /integrations/status` — Integration health/status for current org
+- `GET /audit-logs` — Audit logs for current org
 
-PUT /organizations/:id
+---
 
-DELETE /organizations/:id
+## 🧠 Design Decisions
 
-Users
-GET /users
+- **Multi-Tenancy:** Row-level security (RLS) and org-scoped queries
+- **Async Processing:** Webhooks trigger background jobs with retry and dead-letter queue
+- **Data Consistency:** Idempotent event processing, audit logs
+- **Security:** JWT, per-org rate limiting, input validation
+- **Error Handling:** Circuit breaker for external APIs, retries, dead-letter queue
 
-POST /users
+---
 
-PUT /users/:id
+## 🧩 Simulated External Services
 
-DELETE /users/:id
-
-Webhooks
-POST /webhooks/user-service
-
-POST /webhooks/payment-service
-
-POST /webhooks/communication-service
-
-Monitoring
-GET /integrations/status
-
-See docs/api.md for full request/response schemas.
-
-🧠 Design Decisions
-✅ Multi-Tenancy
-Implemented via row-level scoping (organizationId) in every query
-
-Authenticated JWT includes org_id and role for contextual access
-
-Optional: add DB-level constraints or schema separation for stricter isolation
-
-✅ Async Processing
-Webhooks trigger background jobs using a simple queue abstraction
-
-Retries use exponential backoff and max attempt limits
-
-All job failures logged and visible in health monitor
-
-✅ Data Consistency
-Webhook events and API responses update shared models (e.g., user sync)
-
-Sync operations are idempotent (based on external event_id)
-
-✅ Security
-JWT signing + verification
-
-Rate limiter middleware (per org/user)
-
-Schema validation using Joi
-
-Audit logging for all data mutations
-
-🛡️ Error Handling Strategy
-External API Failures: Circuit breaker + retries
-
-Webhook Duplication: Idempotency keys
-
-Validation: All input validated at route level
-
-Unhandled Rejections: Logged globally
-
-🚥 Health Monitoring
-
-GET /integrations/status
-
-Returns:
-
-{
-  "userService": { "lastSync": "2025-06-26T16:00Z", "status": "OK" },
-  "paymentService": { "lastSync": "2025-06-26T15:48Z", "status": "RETRYING" },
-  ...
-}
-
-
-🧩 Simulated External Services
 Each service exposes mock APIs and sends webhook events:
+- User Management Service – CRUD, webhook on user changes
+- Payment Service – Subscriptions, invoices, status webhooks
+- Communication Service – Email/notification delivery updates
 
-User Management Service – CRUD, webhook on user changes
+Simulated using Express servers in `/integrations/`.
 
-Payment Service – Subscriptions, invoices, status webhooks
+---
 
-Communication Service – Email/notification delivery updates
+## ✨ Future Enhancements
 
-Simulated using Express servers in /integrations/.
+- Full SSO using Passport.js with OIDC
+- Kafka or RabbitMQ for scalable job queues
+- Tenant provisioning UI
+- Admin dashboard for audit logs and integration statuses
 
-✨ Future Enhancements
-Full SSO using Passport.js with OIDC
+---
 
-Kafka or RabbitMQ for scalable job queues
+## 🧠 Author Notes
 
-Tenant provisioning UI
-
-Admin dashboard for audit logs and integration statuses
-
-🧠 Author Notes
 This project was built as part of a senior backend engineering assessment, with emphasis on:
-
-Platform design
-
-Integration reliability
-
-Error resilience
-
-Clean, maintainable code
+- Platform design
+- Integration reliability
+- Error resilience
+- Clean, maintainable code
 
 Feedback and suggestions welcome.

@@ -5,10 +5,10 @@ async function getIntegrationStatus(req, res) {
         const organization_id = req.user.organization_id;
 
         const statuses = await IntegrationStatus.findAll(
-            // {
-            //     where: { organization_id },
-            //     attributes: ['provider', 'last_sync_at', 'last_sync_status', 'failure_count']
-            // }
+            {
+                where: { organization_id },
+                attributes: ['provider', 'last_sync_at', 'last_sync_status', 'failure_count']
+            }
         );
 
         return res.json(statuses);

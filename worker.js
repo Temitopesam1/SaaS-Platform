@@ -1,5 +1,4 @@
 require('dotenv').config();
-const { processQueue } = require('./jobs/queue');
-const { processWebhook } = require('./jobs/webhookProcessor');
+const { processQueue, processWebhook } = require('./src/jobs/queue');
 
 processQueue(processWebhook);
